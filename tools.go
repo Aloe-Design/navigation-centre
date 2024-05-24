@@ -511,11 +511,13 @@ func getAppDirs() []string {
 	} else {
 		xdgDataDirs = "/usr/local/share/:/usr/share/"
 	}
+
 	if xdgDataHome != "" {
 		dirs = append(dirs, filepath.Join(xdgDataHome, "applications"))
 	} else if home != "" {
 		dirs = append(dirs, filepath.Join(home, ".local/share/applications"))
 	}
+
 	for _, d := range strings.Split(xdgDataDirs, ":") {
 		dirs = append(dirs, filepath.Join(d, "applications"))
 	}
@@ -546,7 +548,7 @@ func getIcon(appName string) (string, error) {
 	}
 	p := ""
 	for _, d := range appDirs {
-		path := filepath.Join(d, fmt.Sprintf("%s.desktop", appName))
+		path := filepath.Join(d, fmt.Sprintf("%s.desktop", /* appName */)) // neeeee
 		if pathExists(path) {
 			p = path
 			break
@@ -556,7 +558,7 @@ func getIcon(appName string) (string, error) {
 		}
 	}
 	/* Some apps' class varies from their .desktop file name, e.g. 'gimp-2.9.9' or 'pamac-manager'.
-	   Let's try to find a matching .desktop file name */
+	Let's try to find a matching .desktop file name */
 	if !strings.HasPrefix(appName, "/") && p == "" { // skip icon paths given instead of names
 		p = searchDesktopDirs(appName)
 	}
@@ -583,7 +585,7 @@ func searchDesktopDirs(badAppID string) string {
 			if strings.Contains(item.Name(), b4Separator) {
 				//Let's check items starting from 'org.' first
 				if strings.Count(item.Name(), ".") > 1 && strings.HasSuffix(item.Name(),
-					fmt.Sprintf("%s.desktop", badAppID)) {
+					fmt.Sprintf("%s.desktop", /* badAppID */ )) { // neeeee
 					return filepath.Join(d, item.Name())
 				}
 			}
@@ -593,17 +595,31 @@ func searchDesktopDirs(badAppID string) string {
 	b4Separator = strings.Split(badAppID, " ")[0]
 	for _, d := range appDirs {
 		items, _ := os.ReadDir(d)
-		log.Info(">>>", items)
+		// log.Infof(">> %d\n%s -> %s", i, badAppID, d /*items*/) // Log
 
 		// first look for exact 'class.desktop' file, see #31
 		for _, item := range items {
-			if strings.ToUpper(item.Name()) == strings.ToUpper(fmt.Sprintf("%s.desktop", badAppID)) {
+			if strings.ToUpper(item.Name()) == strings.ToUpper(fmt.Sprintf("%s.desktop", /* badAppID */)) {
 				return filepath.Join(d, item.Name())
 			}
 		}
 
 		for _, item := range items {
-			if strings.Contains(strings.ToUpper(item.Name()), strings.ToUpper(b4Separator)) {
+			appNameSplit := strings.Split( b4Separator, "-" )
+			itemNameUpper := strings.ToUpper( item.Name() )
+
+			matches, maxMatches := 0, len( appNameSplit )
+
+			for _, namePart := range appNameSplit {
+				if matches == maxMatches { break }
+
+				if strings.Contains( itemNameUpper, strings.ToUpper( namePart ) ) { matches++ }
+			}
+
+			// fmt.Printf( "%d out of %d\n", matches, maxMatches )
+
+			if matches == maxMatches {
+				// fmt.Println( "found item: ", item.Name() )
 				return filepath.Join(d, item.Name())
 			}
 		}
