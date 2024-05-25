@@ -138,7 +138,7 @@ func taskButton(t client, instances []client) *gtk.Box {
 		}
 	}
 	if img != nil {
-		// box.PackStart(img, false, false, 0)
+		box.PackStart(img, false, false, 0)
 	}
 	button.Connect("enter-notify-event", cancelClose)
 
