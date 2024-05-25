@@ -131,7 +131,7 @@ func taskButton(t client, instances []client) *gtk.Box {
 			img, _ = gtk.ImageNewFromPixbuf(pixbuf)
 		}
 	} else {
-		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-multiple.svg"),
+		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-single.svg"),
 			imgSizeScaled, imgSizeScaled/8)
 		if err == nil {
 			img, _ = gtk.ImageNewFromPixbuf(pixbuf)
