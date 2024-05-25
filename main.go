@@ -69,9 +69,9 @@ var layer = flag.String("l", "overlay", "Layer \"overlay\", \"top\" or \"bottom\
 var launcherCmd = flag.String("c", "", "Command assigned to the launcher button")
 var alignment = flag.String("a", "center", "Alignment in full width/height: \"start\", \"center\" or \"end\"")
 var marginTop = flag.Int("mt", 0, "Margin Top")
-var marginLeft = flag.Int("ml", 0, "Margin Left")
-var marginRight = flag.Int("mr", 0, "Margin Right")
-var marginBottom = flag.Int("mb", 0, "Margin Bottom")
+var marginLeft = flag.Int("ml", 10, "Margin Left")
+var marginRight = flag.Int("mr", 10, "Margin Right")
+var marginBottom = flag.Int("mb", 10, "Margin Bottom")
 var hotspotDelay = flag.Int64("hd", 20, "Hotspot Delay [ms]; the smaller, the faster mouse pointer needs to enter hotspot for the dock to appear; set 0 to disable")
 var noLauncher = flag.Bool("nolauncher", false, "don't show the launcher button")
 var resident = flag.Bool("r", false, "Leave the program resident, but w/o hotspot")
@@ -81,7 +81,7 @@ func buildMainBox(vbox *gtk.Box) {
 	if mainBox != nil {
 		mainBox.Destroy()
 	}
-	mainBox, _ = gtk.BoxNew(innerOrientation, 0)
+	mainBox, _ = gtk.BoxNew(innerOrientation, 10)
 
 	if *alignment == "start" {
 		vbox.PackStart(mainBox, false, true, 0)
@@ -189,7 +189,7 @@ func buildMainBox(vbox *gtk.Box) {
 		var pixbuf *gdk.Pixbuf
 		var e error
 		if *ico == "" {
-			pixbuf, e = gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/grid.svg"), imgSizeScaled, imgSizeScaled)
+			pixbuf, e = gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/grid.svg"), imgSizeScaled, imgSizeScaled)
 		} else {
 			pixbuf, e = createPixbuf(*ico, imgSizeScaled)
 		}
@@ -238,6 +238,7 @@ func setupHotSpot(monitor gdk.Monitor, dockWindow *gtk.Window) gtk.Window {
 	} else {
 		box, _ = gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 0)
 	}
+	
 	win.Add(box)
 
 	detectorBox, _ := gtk.EventBoxNew()
@@ -403,7 +404,7 @@ func main() {
 	}
 	defer lockFile.Close()
 
-	if !*noLauncher && *launcherCmd == "" {
+	/* if !*noLauncher && *launcherCmd == "" {
 		if isCommand("nwg-drawer") {
 			*launcherCmd = "nwg-drawer"
 		} else if isCommand("nwggrid") {
@@ -415,7 +416,7 @@ func main() {
 		} else {
 			log.Info("Neither 'nwg-drawer' nor 'nwggrid' command found, and no other launcher specified; hiding the launcher button.")
 		}
-	}
+	} */
 
 	dataHome, err = getDataHome()
 	if err != nil {
@@ -460,7 +461,7 @@ func main() {
 	}
 
 	layershell.InitForWindow(win)
-	layershell.SetNamespace(win, "nwg-dock")
+	layershell.SetNamespace(win, "aloe-navigation-centre")
 
 	var output2mon map[string]*gdk.Monitor
 	if *targetOutput != "" {

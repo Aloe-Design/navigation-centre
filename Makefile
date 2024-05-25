@@ -8,19 +8,19 @@ get:
 	go get "github.com/sirupsen/logrus"
 
 build:
-	go build -v -o bin/nwg-dock-hyprland .
+	go build -v -o bin/aloe-navigation-centre .
 
 install:
-	-pkill -f nwg-dock-hyprland
+	-pkill -f aloe-navigation-centre
 	sleep 1
-	mkdir -p /usr/share/nwg-dock-hyprland
-	cp -r images /usr/share/nwg-dock-hyprland
-	cp config/* /usr/share/nwg-dock-hyprland
-	cp bin/nwg-dock-hyprland /usr/bin
+	mkdir -p /usr/share/aloeos/navigation-centre
+	cp -r images /usr/share/aloeos/navigation-centre
+	cp config/* /usr/share/aloeos/navigation-centre
+	cp bin/aloe-navigation-centre /usr/bin
 
 uninstall:
-	rm -r /usr/share/nwg-dock-hyprland
-	rm /usr/bin/nwg-dock-hyprland
+	rm -r /usr/share/aloeos/navigation-centre
+	rm /usr/bin/aloe-navigation-centre
 
 run:
 	go run .

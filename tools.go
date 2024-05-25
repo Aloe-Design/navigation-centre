@@ -33,7 +33,7 @@ func pinnedButton(ID string) *gtk.Box {
 
 	image, err := createImage(ID, imgSizeScaled)
 	if err != nil || image == nil {
-		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/icon-missing.svg"),
+		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/icon-missing.svg"),
 			imgSizeScaled, imgSizeScaled)
 		if err == nil {
 			image, _ = gtk.ImageNewFromPixbuf(pixbuf)
@@ -46,7 +46,7 @@ func pinnedButton(ID string) *gtk.Box {
 	button.SetImagePosition(gtk.POS_TOP)
 	button.SetAlwaysShowImage(true)
 	button.SetTooltipText(getName(ID))
-	pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/task-empty.svg"),
+	/*pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-empty.svg"),
 		imgSizeScaled, imgSizeScaled/8)
 	var img *gtk.Image
 	if err == nil {
@@ -54,7 +54,7 @@ func pinnedButton(ID string) *gtk.Box {
 		if err == nil {
 			box.PackStart(img, false, false, 0)
 		}
-	}
+	} */
 
 	button.Connect("clicked", func() {
 		launch(ID)
@@ -109,7 +109,7 @@ func taskButton(t client, instances []client) *gtk.Box {
 
 	image, _ := createImage(t.Class, imgSizeScaled)
 	if image == nil {
-		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/icon-missing.svg"),
+		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/icon-missing.svg"),
 			imgSizeScaled, imgSizeScaled)
 		if err == nil {
 			image, _ = gtk.ImageNewFromPixbuf(pixbuf)
@@ -125,20 +125,20 @@ func taskButton(t client, instances []client) *gtk.Box {
 
 	var img *gtk.Image
 	if len(instances) < 2 {
-		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/task-single.svg"),
+		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-single.svg"),
 			imgSizeScaled, imgSizeScaled/8)
 		if err == nil {
 			img, _ = gtk.ImageNewFromPixbuf(pixbuf)
 		}
 	} else {
-		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/task-multiple.svg"),
+		pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-multiple.svg"),
 			imgSizeScaled, imgSizeScaled/8)
 		if err == nil {
 			img, _ = gtk.ImageNewFromPixbuf(pixbuf)
 		}
 	}
 	if img != nil {
-		box.PackStart(img, false, false, 0)
+		// box.PackStart(img, false, false, 0)
 	}
 	button.Connect("enter-notify-event", cancelClose)
 
@@ -433,9 +433,9 @@ func readTextFile(path string) (string, error) {
 
 func configDir() string {
 	if os.Getenv("XDG_CONFIG_HOME") != "" {
-		return fmt.Sprintf("%s/nwg-dock-hyprland", os.Getenv("XDG_CONFIG_HOME"))
+		return fmt.Sprintf("%s/aloeos/navigation-centre", os.Getenv("XDG_CONFIG_HOME"))
 	}
-	return fmt.Sprintf("%s/.config/nwg-dock-hyprland", os.Getenv("HOME"))
+	return fmt.Sprintf("%s/.config/aloeos/navigation-centre", os.Getenv("HOME"))
 }
 
 func createDir(dir string) {
@@ -493,11 +493,11 @@ func getDataHome() (string, error) {
 	dirs = append(dirs, xdgDataDirs...)
 
 	for _, d := range dirs {
-		if pathExists(filepath.Join(d, "nwg-dock-hyprland")) {
+		if pathExists(filepath.Join(d, "aloeos/navigation-centre")) {
 			return d, nil
 		}
 	}
-	return "", errors.New("no data directory found for nwg-dock-hyprland")
+	return "", errors.New("no data directory found for aloeos/navigation-centre")
 }
 
 func getAppDirs() []string {
