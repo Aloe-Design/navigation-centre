@@ -548,7 +548,7 @@ func getIcon(appName string) (string, error) {
 	}
 	p := ""
 	for _, d := range appDirs {
-		path := filepath.Join(d, fmt.Sprintf("%s.desktop", /* appName */)) // neeeee
+		path := filepath.Join(d, fmt.Sprintf("%s.desktop", /* appName */ ))
 		if pathExists(path) {
 			p = path
 			break
@@ -585,7 +585,7 @@ func searchDesktopDirs(badAppID string) string {
 			if strings.Contains(item.Name(), b4Separator) {
 				//Let's check items starting from 'org.' first
 				if strings.Count(item.Name(), ".") > 1 && strings.HasSuffix(item.Name(),
-					fmt.Sprintf("%s.desktop", /* badAppID */ )) { // neeeee
+					fmt.Sprintf("%s.desktop", /* badAppID */)) {
 					return filepath.Join(d, item.Name())
 				}
 			}
