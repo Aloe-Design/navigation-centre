@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -672,34 +673,52 @@ func getExec(appName string) (string, error) {
 	return cmd, nil
 }
 
+func getSystemLanguageCode() string {
+	if lang := os.Getenv("LANG"); lang != "" {
+		langCode := strings.Split(lang, "_")[0]
+		langCode = strings.Split(langCode, ".")[0]
+		return langCode
+	}
+
+	return "en_US"
+}
+
 func getName(appName string) string {
 	name := appName
-	for _, d := range appDirs {
-		files, _ := os.ReadDir(d)
-		path := ""
-		for _, f := range files {
-			if strings.HasSuffix(f.Name(), ".desktop") {
-				if f.Name() == fmt.Sprintf("%s.desktop", appName) ||
-					f.Name() == fmt.Sprintf("%s.desktop", strings.ToLower(appName)) {
-					path = filepath.Join(d, f.Name())
-					break
-				}
-			}
-		}
+
+	for _, directory := range appDirs {
+		_ = directory // Some dummy code to avoid unused variable error
+
+		// Why not just use searchDesktopDirs() ?
+		path := searchDesktopDirs( appName )
 
 		if path != "" {
 			lines, err := loadTextFile(path)
-			if err != nil {
-				return name
-			}
+			if err != nil { return name }
+
 			for _, line := range lines {
-				if strings.HasPrefix(strings.ToUpper(line), "NAME") {
-					name = line[5:]
-					break
+				lineSplitted := strings.Split( line, "=" )
+				linePropertyUpper := strings.ToUpper( lineSplitted[0] )
+
+				if strings.HasPrefix( linePropertyUpper, "NAME" ) || strings.HasPrefix( linePropertyUpper, "GENERICNAME" ) {
+					if strings.Contains( lineSplitted[0], "[" ) {
+						regex := regexp.MustCompile( `\[(.*?)\]` )
+						matches := regex.FindAllStringSubmatch(lineSplitted[0], -1)
+						systemLanguage := getSystemLanguageCode()
+
+						for _, match := range matches {
+							if match[1] == systemLanguage {
+								return lineSplitted[1]
+							}
+						}
+					} else {
+						return line[5:]
+					}
 				}
 			}
 		}
 	}
+
 	return name
 }
 
