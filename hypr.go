@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sync"
 )
 
 type workspace struct {
@@ -41,11 +42,11 @@ type monitor struct {
 }
 
 type client struct {
-	Address   string `json:"address"`
-	Mapped    bool   `json:"mapped"`
-	Hidden    bool   `json:"hidden"`
-	At        []int  `json:"at"`
-	Size      []int  `json:"size"`
+	Address        string `json:"address"`
+	Mapped         bool   `json:"mapped"`
+	Hidden         bool   `json:"hidden"`
+	At             []int  `json:"at"`
+	Size           []int  `json:"size"`
 	Workspace struct {
 		Id   int    `json:"id"`
 		Name string `json:"name"`
@@ -65,6 +66,8 @@ type client struct {
 	Grouped        []interface{} `json:"grouped"`
 	Swallowing     interface{}   `json:"swallowing"`
 }
+
+var mutex sync.Mutex
 
 func hyprctl(cmd string) ([]byte, error) {
 	socketFile := fmt.Sprintf("%s/%s/.socket.sock", hyprDir, his)
@@ -95,7 +98,9 @@ func listMonitors() error {
 	if err != nil {
 		return err
 	} else {
-		err = json.Unmarshal([]byte(reply), &monitors)
+		mutex.Lock()
+		err = json.Unmarshal([]byte( reply ), &monitors)
+		mutex.Unlock()
 	}
 	return err
 }
@@ -105,18 +110,26 @@ func listClients() error {
 	if err != nil {
 		return err
 	} else {
-		err = json.Unmarshal([]byte(reply), &clients)
+		mutex.Lock()
+		err = json.Unmarshal([]byte( reply ), &clients)
+		mutex.Unlock()
 	}
+
 	activeClient, _ = getActiveWindow()
+
 	return err
 }
 
 func getActiveWindow() (*client, error) {
 	var activeWindow client
 	reply, err := hyprctl("j/activewindow")
-	err = json.Unmarshal([]byte(reply), &activeWindow)
+	mutex.Lock()
+	err = json.Unmarshal([]byte( reply ), &activeWindow)
+	mutex.Unlock()
+
 	if err == nil {
 		return &activeWindow, nil
 	}
+
 	return nil, err
 }

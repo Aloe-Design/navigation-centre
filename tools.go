@@ -15,7 +15,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+    "time"
+    "unicode/utf8"
 )
+
+func getWidget( widgetFunc func ( ) ( *gtk.Widget, error ) ) *gtk.Widget {
+	widget, err := widgetFunc(  )
+	if err != nil { return nil }
+
+	return widget
+}
 
 func taskInstances(ID string) []client {
 	var found []client
@@ -24,7 +33,23 @@ func taskInstances(ID string) []client {
 			found = append(found, c)
 		}
 	}
+
 	return found
+}
+
+func getTimeForClock( currentTime  time.Time) string {
+	hourString := currentTime.Format( "15:04" )
+
+	if *clockDisplaySeconds {
+		hourString = currentTime.Format( "15:04:05" )
+	}
+
+	if hourString[0] == '0' {
+		_, i := utf8.DecodeRuneInString( hourString )
+		hourString = hourString[ i: ]
+	}
+
+	return hourString
 }
 
 func pinnedButton(ID string) *gtk.Box {
@@ -47,7 +72,7 @@ func pinnedButton(ID string) *gtk.Box {
 	button.SetImagePosition(gtk.POS_TOP)
 	button.SetAlwaysShowImage(true)
 	button.SetTooltipText(getName(ID))
-	/*pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-empty.svg"),
+	pixbuf, err := gdk.PixbufNewFromFileAtSize(filepath.Join(dataHome, "aloeos/navigation-centre/images/task-empty.svg"),
 		imgSizeScaled, imgSizeScaled/8)
 	var img *gtk.Image
 	if err == nil {
@@ -55,7 +80,7 @@ func pinnedButton(ID string) *gtk.Box {
 		if err == nil {
 			box.PackStart(img, false, false, 0)
 		}
-	} */
+	}
 
 	button.Connect("clicked", func() {
 		launch(ID)

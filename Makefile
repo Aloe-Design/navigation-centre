@@ -14,7 +14,7 @@ install:
 	-pkill -f aloe-navigation-centre
 	sleep 1
 	mkdir -p /usr/share/aloeos/navigation-centre
-	cp -r images /usr/share/aloeos/navigation-centre
+	cp -r ./images /usr/share/aloeos/navigation-centre
 	cp config/* /usr/share/aloeos/navigation-centre
 	cp bin/aloe-navigation-centre /usr/bin
 

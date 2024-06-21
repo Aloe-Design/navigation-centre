@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
+    "math"
+    "net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -13,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+    log "github.com/sirupsen/logrus"
 
 	"github.com/allan-simon/go-singleinstance"
 	"github.com/dlasky/gotk3-layershell/layershell"
@@ -59,11 +60,11 @@ var cssFileName = flag.String("s", "style.css", "Styling: css file name")
 var targetOutput = flag.String("o", "", "name of Output to display the dock on")
 var displayVersion = flag.Bool("v", false, "display Version information")
 var autohide = flag.Bool("d", false, "auto-hiDe: show dock when hotspot hovered, close when left or a button clicked")
-var full = flag.Bool("f", false, "take Full screen width/height")
+var full = flag.Bool("f", true, "take Full screen width/height")
 var numWS = flag.Int64("w", 10, "number of Workspaces you use")
 var position = flag.String("p", "bottom", "Position: \"bottom\", \"top\" or \"left\"")
 var exclusive = flag.Bool("x", true, "set eXclusive zone: move other windows aside; overrides the \"-l\" argument")
-var imgSize = flag.Int("i", 38, "Icon size")
+var imgSize = flag.Int("i", 34, "Icon size")
 var ico = flag.String("ico", "", "alternative name or path for the launcher ICOn")
 var layer = flag.String("l", "overlay", "Layer \"overlay\", \"top\" or \"bottom\"")
 var launcherCmd = flag.String("c", "", "Command assigned to the launcher button")
@@ -76,6 +77,7 @@ var hotspotDelay = flag.Int64("hd", 20, "Hotspot Delay [ms]; the smaller, the fa
 var noLauncher = flag.Bool("nolauncher", false, "don't show the launcher button")
 var resident = flag.Bool("r", false, "Leave the program resident, but w/o hotspot")
 var debug = flag.Bool("debug", false, "turn on debug messages")
+var clockDisplaySeconds = flag.Bool( "cs", false, "display seconds on the clock" )
 
 func buildMainBox(vbox *gtk.Box) {
 	if mainBox != nil {
@@ -163,6 +165,7 @@ func buildMainBox(vbox *gtk.Box) {
 			if len(instances) == 1 {
 				button := taskButton(t, instances)
 				mainBox.PackStart(button, false, false, 0)
+
 				if t.Class == activeClient.Class && !*autohide {
 					button.SetProperty("name", "active")
 				} else {
@@ -222,6 +225,160 @@ func buildMainBox(vbox *gtk.Box) {
 	}
 
 	mainBox.ShowAll()
+}
+
+func buildControlsBox( controlsBox *gtk.Box ) {
+	controlsBox.SetName( "controlsBox" )
+
+	iconsPath := filepath.Join( dataHome, "aloeos/navigation-centre/images/icons" )
+	iconSize := 24
+
+	// A list of icons in controlsBox. For example "wifi/full.svg"
+	controlIcons := []string {
+		"wifi/3.svg",
+		"bluetooth/disabled.svg",
+		"volume/muted.svg",
+	}
+
+	for _, iconPath := range controlIcons {
+		button, _ := gtk.ButtonNew()
+		icon, _ := gtk.ImageNew()
+
+		pixbuf, err := gdk.PixbufNewFromFileAtSize( filepath.Join( iconsPath, iconPath ), iconSize, iconSize)
+		if err != nil { log.Fatalln( "Failed to create infoBox icon pixbuf from file: ", err ) }
+		icon.SetFromPixbuf( pixbuf )
+
+		button.SetSizeRequest( 40, 40 )
+		button.SetImage( icon )
+		controlsBox.PackStart( button, false, false, 0 )
+	}
+
+	// Build the clock
+	currentTime := time.Now()
+	hourLabel, _ := gtk.LabelNew( getTimeForClock( currentTime ) )
+	hourLabel.Set( "name", "hourLabel" )
+	hourLabel.SetHAlign( gtk.ALIGN_START )
+
+	dateLabel, _ := gtk.LabelNew( currentTime.Format( "2.1. 2006" ) )
+	dateLabel.Set( "name", "dateLabel" )
+	dateLabel.SetHAlign( gtk.ALIGN_START )
+
+	// Update the clock
+	ticker := time.NewTicker( 5 * time.Second )
+
+	if *clockDisplaySeconds {
+		ticker = time.NewTicker( 1 * time.Second )
+	}
+
+	quit := make(chan struct{})
+	go func() {
+	    for {
+	       select {
+	        case <- ticker.C:
+	            currentTime = time.Now()
+				hourLabel.SetText( getTimeForClock( currentTime ) )
+				dateLabel.SetText( currentTime.Format( "2.1. 2006" ) )
+
+	        case <- quit:
+	            ticker.Stop()
+	            return
+	        }
+	    }
+	}()
+
+	clockBox, _ := gtk.BoxNew( gtk.ORIENTATION_VERTICAL, 0 )
+	clockBox.Set( "name", "controlsClockBox" )
+	clockBox.SetVAlign( gtk.ALIGN_CENTER )
+
+	clockBox.PackStart( hourLabel, false, false, 0 )
+	clockBox.PackStart( dateLabel, false, false, 0 )
+
+	controlsBox.PackStart( clockBox, false, false, 0 )
+
+	// Set proper alignment in the grid
+	controlsBox.SetHAlign( gtk.ALIGN_START )
+	controlsBox.SetVAlign( gtk.ALIGN_FILL )
+}
+
+func buildInfoBox( infoBox *gtk.Box ) {
+	infoBox.SetName( "infoBox" )
+
+	iconsPath := filepath.Join( dataHome, "aloeos/navigation-centre/images/icons" )
+	iconSize := 24
+
+	keyboardLayoutButton, _ := gtk.ButtonNew()
+	keyboardLayoutLabel, _ := gtk.LabelNew( "CES" )
+	keyboardLayoutButton.Add( keyboardLayoutLabel )
+
+	infoBox.PackStart( keyboardLayoutButton, false, false, 0 )
+
+	// Don't use full path ( /home/bob/... ), use name of the file instead.
+	// For example, "battery/2.svg"
+	iconButtons := []string {
+		"settings.svg",
+		"search.svg",
+		"battery/7.svg",
+	}
+
+	var (
+		batteryButtonPointer **gtk.Image
+		batteryPercentage int
+	)
+
+
+	for _, iconPath := range iconButtons {
+		button, _ := gtk.ButtonNew()
+		icon, _ := gtk.ImageNew()
+
+		pixbuf, err := gdk.PixbufNewFromFileAtSize( filepath.Join( iconsPath, iconPath ), iconSize, iconSize)
+		if err != nil { log.Fatalln( "Failed to create infoBox icon pixbuf from file: ", err ) }
+		icon.SetFromPixbuf( pixbuf )
+
+		button.SetSizeRequest( 40, 40 )
+		button.SetImage( icon )
+		infoBox.PackStart( button, false, false, 0 )
+
+		if strings.Contains( iconPath, "battery/" ) {
+			batteryButtonPointer = &icon
+		}
+	}
+
+	ticker := time.NewTicker( 10 * time.Second )
+
+	quit := make(chan struct{})
+	go func() {
+	    for {
+	       select {
+	        case <- ticker.C:
+				percentageCommand := exec.Command( "cat", "/sys/class/power_supply/BAT0/capacity" )
+				percentageRaw, err := percentageCommand.CombinedOutput()
+
+				if err != nil {
+					log.Fatalln( "Failed to get battery percentage: ", err )
+					return
+				}
+
+				percentage, err := strconv.Atoi( strings.ReplaceAll( string( percentageRaw ), "\n", "" ) )
+
+				if err != nil {
+					log.Fatalln( "Failed to convert battery percentage to an integer: ", err )
+				}
+
+				batteryPercentage = int( math.Floor( float64( percentage / 12 ) ) - 1 )
+				pixbuf, err := gdk.PixbufNewFromFileAtSize( filepath.Join( iconsPath, fmt.Sprintf( "battery/%d.svg", batteryPercentage ) ), iconSize, iconSize )
+				if err != nil { log.Fatalln( "Failed to create infoBox icon pixbuf from file: ", err ) }
+				( *batteryButtonPointer ).SetFromPixbuf( pixbuf )
+
+	        case <- quit:
+	            ticker.Stop()
+	            return
+	        }
+	    }
+	}()
+
+	// Set proper alignment
+	infoBox.SetHAlign( gtk.ALIGN_END )
+	infoBox.SetVAlign( gtk.ALIGN_FILL )
 }
 
 func setupHotSpot(monitor gdk.Monitor, dockWindow *gtk.Window) gtk.Window {
@@ -402,21 +559,8 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
 	defer lockFile.Close()
-
-	/* if !*noLauncher && *launcherCmd == "" {
-		if isCommand("nwg-drawer") {
-			*launcherCmd = "nwg-drawer"
-		} else if isCommand("nwggrid") {
-			*launcherCmd = "nwggrid -p"
-		}
-
-		if *launcherCmd != "" {
-			log.Infof("Using auto-detected launcher command: '%s'", *launcherCmd)
-		} else {
-			log.Info("Neither 'nwg-drawer' nor 'nwggrid' command found, and no other launcher specified; hiding the launcher button.")
-		}
-	} */
 
 	dataHome, err = getDataHome()
 	if err != nil {
@@ -492,7 +636,7 @@ func main() {
 			menuAnchor = gdk.GDK_GRAVITY_NORTH
 		}
 
-		outerOrientation = gtk.ORIENTATION_VERTICAL
+		outerOrientation = gtk.ORIENTATION_HORIZONTAL
 		innerOrientation = gtk.ORIENTATION_HORIZONTAL
 
 		layershell.SetAnchor(win, layershell.LAYER_SHELL_EDGE_LEFT, *full)
@@ -545,14 +689,35 @@ func main() {
 		cancelClose()
 	})
 
-	outerBox, _ := gtk.BoxNew(outerOrientation, 0)
-	_ = outerBox.SetProperty("name", "box")
-	win.Add(outerBox)
+	alignmentGrid, _ := gtk.GridNew()
+	win.Add( alignmentGrid )
 
-	alignmentBox, _ := gtk.BoxNew(innerOrientation, 0)
-	outerBox.PackStart(alignmentBox, true, true, 0)
+	controlsBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 4 )
+	buildControlsBox( controlsBox ) // Build controlsBox in its own function
 
-	mainBox, _ = gtk.BoxNew(innerOrientation, 0)
+
+	// Dock box
+	alignmentBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 0)
+	alignmentBox.SetName( "dockBox" )
+	alignmentBox.CheckResize()
+
+	alignmentBox.SetHAlign( gtk.ALIGN_CENTER )
+	alignmentBox.SetVAlign( gtk.ALIGN_FILL )
+
+	// Weather box
+	infoBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 4 )
+	buildInfoBox( infoBox )
+
+	alignmentGrid.SetHExpand( true )
+	alignmentGrid.SetVExpand( true )
+	alignmentGrid.SetRowHomogeneous( true )
+	alignmentGrid.SetColumnHomogeneous( true )
+
+	alignmentGrid.Attach( controlsBox, 0, 0, 1, 1 )
+	alignmentGrid.Attach( alignmentBox, 1, 0, 1, 1 )
+	alignmentGrid.Attach( infoBox, 2, 0, 1, 1 )
+
+	mainBox, _ = gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 0)
 	// We'll pack mainBox later, in buildMainBox
 
 	oldClients = clients
