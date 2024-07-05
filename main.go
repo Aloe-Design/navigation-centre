@@ -321,7 +321,7 @@ func buildInfoBox( infoBox *gtk.Box ) {
 	// For example, "battery/2.svg"
 	iconButtons := []string {
 		"keyboard.svg",
-		"settings.svg",
+		"configuration.svg",
 		"search.svg",
 		"battery/7.svg",
 	}
