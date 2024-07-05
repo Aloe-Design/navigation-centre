@@ -1,36 +1,75 @@
 window {
-    background: rgba( 255, 255, 255, .1 );
-	border-radius: 20px;
-	border: 1px solid rgba( 255, 255, 255, .1 )
+    background: transparent
 }
 
-#box {
-	padding: 10px
+#controlsBox, #dockBox, #infoBox {
+    background: rgba( 70, 70, 70, .4 );
+    border-radius: 17px;
+    border: 1px solid rgba( 255, 255, 255, .06 );
+    padding: 8px;
 }
 
-#active {
+#infoBox button {
+    padding: 6px 12px 4px;
+}
+
+#controlsBox button {
+    padding: 5px 10px;
+}
+
+#controlsClockBox #hourLabel {
+    font-size: 16px;
+}
+
+#controlsClockBox #dateLabel {
+    color: rgba( 255, 255, 255, .5 );
+    font-size: 14px;
+}
+
+#controlsClockBox {
+    padding: 0 14px 0 10px;
+}
+
+#active button {
 	background: rgba( 255, 255, 255, .05 );
+    border: 1px solid rgba( 255, 255, 255, .025 );
 	border-radius: 10px;
+}
+
+#active button:hover, button:hover {
+    background-color: rgba( 255, 255, 255, .075 );
+    border: 1px solid rgba( 255, 255, 255, .025 );
+}
+
+#active button:active, button:active {
+    background-color: rgba( 255, 255, 255, .02 )
 }
 
 button, image {
 	background: none;
 	border-style: none;
 	box-shadow: none;
-	color: #999
+	color: #999;
 }
 
 image {
 	box-shadow: none;
-	border: none;
+    border: none;
+}
+
+* {
+    -gtk-icon-shadow: none;
+    text-shadow: none;
+    font-family: 'Inter';
+    font-weight: 500;
+    font-size: 14px;
+    color: rgba( 255, 255, 255, .9 );
+    transition: .1s;
 }
 
 button {
-	padding: 10px;
-	font-size: 12px;
-	border-radius: 10px;
-}
-
-button:hover {
-	background-color: rgba(255, 255, 255, .1);
+    padding: 10px 10px 6px;
+    font-size: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba( 255, 255, 255, 0 );
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"sync"
 )
 
 type workspace struct {
@@ -67,8 +66,6 @@ type client struct {
 	Swallowing     interface{}   `json:"swallowing"`
 }
 
-var mutex sync.Mutex
-
 func hyprctl(cmd string) ([]byte, error) {
 	socketFile := fmt.Sprintf("%s/%s/.socket.sock", hyprDir, his)
 	conn, err := net.Dial("unix", socketFile)
@@ -98,9 +95,7 @@ func listMonitors() error {
 	if err != nil {
 		return err
 	} else {
-		mutex.Lock()
 		err = json.Unmarshal([]byte( reply ), &monitors)
-		mutex.Unlock()
 	}
 	return err
 }
@@ -110,9 +105,7 @@ func listClients() error {
 	if err != nil {
 		return err
 	} else {
-		mutex.Lock()
 		err = json.Unmarshal([]byte( reply ), &clients)
-		mutex.Unlock()
 	}
 
 	activeClient, _ = getActiveWindow()
@@ -123,9 +116,7 @@ func listClients() error {
 func getActiveWindow() (*client, error) {
 	var activeWindow client
 	reply, err := hyprctl("j/activewindow")
-	mutex.Lock()
 	err = json.Unmarshal([]byte( reply ), &activeWindow)
-	mutex.Unlock()
 
 	if err == nil {
 		return &activeWindow, nil

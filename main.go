@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
+    "syscall"
 	"time"
 
     log "github.com/sirupsen/logrus"
@@ -83,7 +83,7 @@ func buildMainBox(vbox *gtk.Box) {
 	if mainBox != nil {
 		mainBox.Destroy()
 	}
-	mainBox, _ = gtk.BoxNew(innerOrientation, 10)
+	mainBox, _ = gtk.BoxNew(innerOrientation, 7)
 
 	if *alignment == "start" {
 		vbox.PackStart(mainBox, false, true, 0)
@@ -237,7 +237,7 @@ func buildControlsBox( controlsBox *gtk.Box ) {
 	controlIcons := []string {
 		"wifi/3.svg",
 		"bluetooth/disabled.svg",
-		"volume/muted.svg",
+		"volume/up.svg",
 	}
 
 	for _, iconPath := range controlIcons {
@@ -286,7 +286,7 @@ func buildControlsBox( controlsBox *gtk.Box ) {
 	    }
 	}()
 
-	clockBox, _ := gtk.BoxNew( gtk.ORIENTATION_VERTICAL, 0 )
+	clockBox, _ := gtk.BoxNew( gtk.ORIENTATION_VERTICAL, 1 )
 	clockBox.Set( "name", "controlsClockBox" )
 	clockBox.SetVAlign( gtk.ALIGN_CENTER )
 
@@ -306,25 +306,25 @@ func buildInfoBox( infoBox *gtk.Box ) {
 	iconsPath := filepath.Join( dataHome, "aloeos/navigation-centre/images/icons" )
 	iconSize := 24
 
-	keyboardLayoutButton, _ := gtk.ButtonNew()
-	keyboardLayoutLabel, _ := gtk.LabelNew( "CES" )
+	/* keyboardLayoutButton, _ := gtk.ButtonNew()
+	keyboardLayoutLabel, _ := gtk.LabelNew( "Dayum vole" )
 	keyboardLayoutButton.Add( keyboardLayoutLabel )
 
-	infoBox.PackStart( keyboardLayoutButton, false, false, 0 )
+	infoBox.PackStart( keyboardLayoutButton, false, false, 0 ) */
+
+	var (
+		batteryIconPointer **gtk.Image
+		setBatteryTooltip func( tooltip string )
+	)
 
 	// Don't use full path ( /home/bob/... ), use name of the file instead.
 	// For example, "battery/2.svg"
 	iconButtons := []string {
+		"keyboard.svg",
 		"settings.svg",
 		"search.svg",
 		"battery/7.svg",
 	}
-
-	var (
-		batteryButtonPointer **gtk.Image
-		batteryPercentage int
-	)
-
 
 	for _, iconPath := range iconButtons {
 		button, _ := gtk.ButtonNew()
@@ -334,41 +334,56 @@ func buildInfoBox( infoBox *gtk.Box ) {
 		if err != nil { log.Fatalln( "Failed to create infoBox icon pixbuf from file: ", err ) }
 		icon.SetFromPixbuf( pixbuf )
 
-		button.SetSizeRequest( 40, 40 )
+		button.SetSizeRequest( 50, 50 )
 		button.SetImage( icon )
 		infoBox.PackStart( button, false, false, 0 )
 
 		if strings.Contains( iconPath, "battery/" ) {
-			batteryButtonPointer = &icon
+			batteryIconPointer = &icon
+
+			button.SetTooltipText( "X%" )
+			setBatteryTooltip = func( tooltip string ) {
+				button.SetTooltipText( tooltip )
+			}
 		}
 	}
 
-	ticker := time.NewTicker( 10 * time.Second )
+	// Update the battery icon
+	// I think there might be data races.
+	ticker := time.NewTicker( 1 * time.Second )
+	quit := make( chan struct{} )
 
-	quit := make(chan struct{})
 	go func() {
 	    for {
 	       select {
 	        case <- ticker.C:
 				percentageCommand := exec.Command( "cat", "/sys/class/power_supply/BAT0/capacity" )
-				percentageRaw, err := percentageCommand.CombinedOutput()
+				percentageRaw, percentageErr := percentageCommand.CombinedOutput()
 
-				if err != nil {
-					log.Fatalln( "Failed to get battery percentage: ", err )
-					return
+				chargingCommand := exec.Command( "cat", "/sys/class/power_supply/BAT0/status" )
+				chargingRaw, chargingErr := chargingCommand.CombinedOutput()
+
+				if percentageErr != nil { log.Fatalln( "Failed to get battery percentage: ", percentageErr ) }
+				if chargingErr != nil { log.Fatalln( "Failed to get charging status: ", chargingErr ) }
+
+				percentage, percentageErr := strconv.Atoi( strings.ReplaceAll( string( percentageRaw ), "\n", "" ) )
+				iconPath := "battery/"
+				chargingString := strings.ReplaceAll( string( chargingRaw ), " ", "" )
+
+				if percentageErr != nil { log.Fatalln( "Failed to convert battery percentage to an integer: ", percentageErr ) }
+
+				if strings.Contains( strings.ToLower( chargingString ), "discharging" ) {
+					iconPath = "battery/"
+				} else {
+					iconPath = "battery/charging/"
 				}
 
-				percentage, err := strconv.Atoi( strings.ReplaceAll( string( percentageRaw ), "\n", "" ) )
-
-				if err != nil {
-					log.Fatalln( "Failed to convert battery percentage to an integer: ", err )
-				}
-
-				batteryPercentage = int( math.Floor( float64( percentage / 12 ) ) - 1 )
-				pixbuf, err := gdk.PixbufNewFromFileAtSize( filepath.Join( iconsPath, fmt.Sprintf( "battery/%d.svg", batteryPercentage ) ), iconSize, iconSize )
+				batteryPercentage := int( math.Floor( float64( percentage / 12 ) ) - 1 )
+				pixbuf, err := gdk.PixbufNewFromFileAtSize( filepath.Join( iconsPath, fmt.Sprintf( "%s%d.svg", iconPath, batteryPercentage ) ), iconSize, iconSize )
 				if err != nil { log.Fatalln( "Failed to create infoBox icon pixbuf from file: ", err ) }
-				( *batteryButtonPointer ).SetFromPixbuf( pixbuf )
 
+				( *batteryIconPointer ).SetFromPixbuf( pixbuf )
+				setBatteryTooltip( strings.ReplaceAll( string( percentageRaw ), "\n", "" ) + "%" )
 	        case <- quit:
 	            ticker.Stop()
 	            return
@@ -692,7 +707,7 @@ func main() {
 	alignmentGrid, _ := gtk.GridNew()
 	win.Add( alignmentGrid )
 
-	controlsBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 4 )
+	controlsBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 3 )
 	buildControlsBox( controlsBox ) // Build controlsBox in its own function
 
 
@@ -705,7 +720,7 @@ func main() {
 	alignmentBox.SetVAlign( gtk.ALIGN_FILL )
 
 	// Weather box
-	infoBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 4 )
+	infoBox, _ := gtk.BoxNew( gtk.ORIENTATION_HORIZONTAL, 3 )
 	buildInfoBox( infoBox )
 
 	alignmentGrid.SetHExpand( true )
