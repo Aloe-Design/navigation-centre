@@ -1,3 +1,5 @@
+**Warning: This is a highly unstable work-in-progress fork of nwg-dock-hyprland and is not ready for a daily driver. Proceed with caution.**
+
 # nwg-dock-hyprland
 
 This application is a part of the [nwg-shell](https://nwg-piotr.github.io/nwg-shell) project.
